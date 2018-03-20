@@ -12,9 +12,11 @@ import java.util.List;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
+import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.NonNull;
 import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Function;
 import io.reactivex.functions.Predicate;
 import io.reactivex.observers.DisposableObserver;
@@ -28,60 +30,63 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        Observable<User> userObservable = getObservable();
-       userObservable
-               .subscribeOn(Schedulers.io())
-               .observeOn(AndroidSchedulers.mainThread())
-               .filter(new Predicate<User>() {
-                   @Override
-                   public boolean test(@NonNull User user) throws Exception {
-                       return user.getGender().equalsIgnoreCase("female");
-                   }
-               })
-               .subscribeWith(new DisposableObserver<User>() {
-                   @Override
-                   public void onNext(@NonNull User user) {
-                       Log.d(TAG, user.getUname()+"="+user.getGender());
-                   }
-
-                   @Override
-                   public void onError(@NonNull Throwable e) {
-
-                   }
-
-                   @Override
-                   public void onComplete() {
-
-                   }
-               });
+        Observable<Note> numberObservable = getObservable();
+      numberObservable
+              .observeOn(Schedulers.io())
+              .subscribeOn(AndroidSchedulers.mainThread())
+              .distinct()
+              .subscribeWith(getObserver());
 
 
     }
 
 
 
-private Observable<User> getObservable(){
-    final List<User> users = new ArrayList<>();
-    users.add(new User("Mark","male"));
-    users.add(new User("Lucy","female"));
-    users.add(new User("John","male"));
-    users.add(new User("Scarlett","female"));
-    users.add(new User("Trump","male"));
-    users.add(new User("April","female"));
-    users.add(new User("Obama","male"));
-    return Observable.create(new ObservableOnSubscribe<User>() {
+
+
+
+    private DisposableObserver<Note> getObserver(){
+        return new DisposableObserver<Note>() {
+            @Override
+            public void onNext(@NonNull Note note) {
+                Log.d(TAG, "onNext: "+note.getNote());
+            }
+
+            @Override
+            public void onError(@NonNull Throwable e) {
+                Log.d(TAG, "onError: "+e);
+            }
+
+            @Override
+            public void onComplete() {
+                Log.d(TAG, "onComplete: ");
+            }
+        };
+    }
+
+private Observable<Note> getObservable(){
+    final List<Note> notes = new ArrayList<>();
+    notes.add(new Note(1, "Buy tooth paste!"));
+    notes.add(new Note(2, "Call brother!"));
+    notes.add(new Note(3, "Call brother!"));
+    notes.add(new Note(4, "Pay power bill!"));
+    notes.add(new Note(5, "Watch Narcos tonight!"));
+    notes.add(new Note(6, "Buy tooth paste!"));
+    notes.add(new Note(7, "Pay power bill!"));
+
+    return Observable.create(new ObservableOnSubscribe<Note>() {
         @Override
-        public void subscribe(@NonNull ObservableEmitter<User> emitter) throws Exception {
-            for (User user: users){
-                if(!emitter.isDisposed()){
-                    emitter.onNext(user);
+        public void subscribe(@NonNull ObservableEmitter<Note> emitter) throws Exception {
+            for(Note note:notes){
+                if (!emitter.isDisposed()){
+                    emitter.onNext(note);
                 }
             }
 
             if (!emitter.isDisposed()){
                 emitter.onComplete();
             }
+
         }
     });
 }
